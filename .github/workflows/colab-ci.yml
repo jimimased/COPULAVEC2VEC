@@ -1,0 +1,31 @@
+
+name: colab-ci
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -U pytest nbconvert jupyter
+      - name: Run tests
+        run: |
+          if [ -d tests ]; then pytest -q; else echo "No tests/ folder"; fi
+      - name: Convert notebooks to .py
+        run: |
+          if compgen -G "**/*.ipynb" > /dev/null; then
+            for nb in $(git ls-files "**/*.ipynb"); do
+              jupyter nbconvert --to script "$nb"
+            done
+          else
+            echo "No notebooks to convert."
+          fi
